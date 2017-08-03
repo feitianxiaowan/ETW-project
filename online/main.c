@@ -7,7 +7,7 @@
 #include <wmistr.h>
 #include <evntrace.h>
 
-#define LOGFILE_PATH L"C:\\Users\\zjulist\\Desktop\\source\\IMAGE_LOAD2.etl"
+#define LOGFILE_PATH L"C:\\Users\\admin\\Desktop\\online\\IMAGE_LOAD2.etl"
 
 void wmain(void)
 {
@@ -21,7 +21,7 @@ void wmain(void)
     // which get appended to the end of the session properties structure.
     
     BufferSize = sizeof(EVENT_TRACE_PROPERTIES) 
-		+ sizeof(LOGFILE_PATH)             // delete this in real time mode
+/*		+ sizeof(LOGFILE_PATH)    */         // delete this in real time mode
 		+ sizeof(KERNEL_LOGGER_NAME);
     pSessionProperties = (EVENT_TRACE_PROPERTIES*) malloc(BufferSize);    
     if (NULL == pSessionProperties)
@@ -45,28 +45,58 @@ void wmain(void)
 				//| EVENT_TRACE_FLAG_CSWITCH  
 				//| EVENT_TRACE_FLAG_REGISTRY
 				//| EVENT_TRACE_FLAG_IMAGE_LOAD
-				| EVENT_TRACE_FLAG_FILE_IO_INIT
+				//| EVENT_TRACE_FLAG_FILE_IO_INIT
+				//
 
 
-		//		| EVENT_TRACE_FLAG_NETWORK_TCPIP
-				| EVENT_TRACE_FLAG_DISK_FILE_IO
-				| EVENT_TRACE_FLAG_FILE_IO		
+				//| EVENT_TRACE_FLAG_NETWORK_TCPIP
+				//| EVENT_TRACE_FLAG_DISK_FILE_IO
+				//| EVENT_TRACE_FLAG_FILE_IO	
+
+
+				| EVENT_TRACE_FLAG_PROCESS            // process start & end
+				| EVENT_TRACE_FLAG_THREAD            // thread start & end
+				| EVENT_TRACE_FLAG_IMAGE_LOAD          // image load
+				| EVENT_TRACE_FLAG_FILE_IO              // file IO
+				| EVENT_TRACE_FLAG_DISK_FILE_IO         // requires disk IO
+				| EVENT_TRACE_FLAG_REGISTRY             // registry calls
+				| EVENT_TRACE_FLAG_CSWITCH              // context switches
+				| EVENT_TRACE_FLAG_SYSTEMCALL           // system calls
+				| EVENT_TRACE_FLAG_ALPC                 // ALPC traces
+
+
+				| EVENT_TRACE_FLAG_DISK_IO             // physical disk IO
+				| EVENT_TRACE_FLAG_MEMORY_PAGE_FAULTS   // all page faults
+				| EVENT_TRACE_FLAG_MEMORY_HARD_FAULTS   // hard faults only
+				| EVENT_TRACE_FLAG_NETWORK_TCPIP        // tcpip send & receive
+				| EVENT_TRACE_FLAG_DBGPRINT             // DbgPrint(ex) Calls
+				| EVENT_TRACE_FLAG_PROCESS_COUNTERS     // process perf counters
+				| EVENT_TRACE_FLAG_DPC                  // deffered procedure calls
+				| EVENT_TRACE_FLAG_INTERRUPT            // interrupts
+				| EVENT_TRACE_FLAG_DISK_IO_INIT         // physical disk IO initiation
+				| EVENT_TRACE_FLAG_SPLIT_IO             // split io traces (VolumeManager)
+				| EVENT_TRACE_FLAG_DRIVER               // driver delays
+				//| EVENT_TRACE_FLAG_PROFILE              // sample based profiling
+				//| EVENT_TRACE_FLAG_FILE_IO_INIT  // file IO initiation     
+				//| EVENT_TRACE_FLAG_DISPATCHER	// scheduler (ReadyThread)
+				//| EVENT_TRACE_FLAG_VIRTUAL_ALLOC		//VM operations
+				//| EVENT_TRACE_FLAG_PROFILE
 		;
 	
-	pSessionProperties->LogFileMode = EVENT_TRACE_FILE_MODE_CIRCULAR;
-	pSessionProperties->MaximumFileSize = 1;  //  MB
+	//pSessionProperties->LogFileMode = EVENT_TRACE_FILE_MODE_CIRCULAR;
+	//pSessionProperties->MaximumFileSize = 1;  //  MB
 	
 	
-	//pSessionProperties->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
-	//pSessionProperties->MaximumBuffers = 200;
-	//pSessionProperties->BufferSize = 1000;
-	//pSessionProperties->LogFileNameOffset = 0;
+	pSessionProperties->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+	pSessionProperties->MaximumBuffers = 200;
+	pSessionProperties->BufferSize = 1000;
+	pSessionProperties->LogFileNameOffset = 0;
 	
 
 	
-    pSessionProperties->LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
-    pSessionProperties->LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + sizeof(KERNEL_LOGGER_NAME); 
-    StringCbCopy((LPWSTR)((char*)pSessionProperties + pSessionProperties->LogFileNameOffset), sizeof(LOGFILE_PATH), LOGFILE_PATH);
+    //pSessionProperties->LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
+    //pSessionProperties->LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + sizeof(KERNEL_LOGGER_NAME); 
+    //StringCbCopy((LPWSTR)((char*)pSessionProperties + pSessionProperties->LogFileNameOffset), sizeof(LOGFILE_PATH), LOGFILE_PATH);
 	
     // Create the trace session.
 

@@ -23,13 +23,13 @@
 #include <tlhelp32.h>
 #include <stdlib.h>
 #include <sddl.h>
+#include <thread>
 
 #include <memory>
 
 #include <unordered_map>
 
 #include <activemq/util/Config.h>
-
 #include <decaf/lang/System.h>
 #include <decaf/lang/Runnable.h>
 #include <decaf/lang/Integer.h>
@@ -41,7 +41,11 @@
 #include <cms/MessageProducer.h>
 #include <cms/BytesMessage.h>
 #include <cms/CMSException.h>
+
+
 #define MaxSendNum 10000
+
+
 using namespace cms;
 using namespace activemq;
 using namespace activemq::core;
@@ -56,7 +60,11 @@ using namespace std;
 
 #pragma comment(lib, "tdh.lib")
 
-#define LOGFILE_PATH L"G:\\source\\DIA_findSymbolByVA\\record.etl"
+//#define LOGFILE_PATH L"G:\\source\\DIA_findSymbolByVA\\record.etl"
+#define LOGFILE_PATH L"C:\\Users\\admin\\Desktop\\online\\record.etl"
+
+
+
 struct hash_func
 {
 	//BKDR hash algorithm，有关字符串hash函数，可以去找找资料看看
@@ -81,7 +89,10 @@ struct cmp
 		return wcscmp(str1, str2) == 0;
 	}
 };
+
 unordered_map<const wchar_t*, int, hash_func, cmp> ParaList;
+
+
 wchar_t* SysParaList[] = { L"NtGdiCreateCompatibleDC",
 L"NtGdiGetDIBitsInternal",
 L"NtUserGetDC",
@@ -194,6 +205,7 @@ BOOL pidInWhitelist(DWORD pid);
 BOOL finishOP;
 VOID getallthread(VOID);
 VOID getallprocess(VOID);
+VOID __cdecl killProcessByPID(VOID*);
 SOCKET sockClient;
 using namespace std;
 
@@ -201,12 +213,41 @@ using namespace std;
 wofstream outFile;
 DWORD  MessageCount;
 DWORD curPID[4] = { 0L };
-BYTE data[MaxSendNum*6 + 1];
+BYTE data[MaxSendNum * 6 + 1];
 getAddress g;
 string path = "";
 DWORD EventType;
 wchar_t* parm;
-set<DWORD> whiteListPID;
+set<DWORD> whiteListPID = { 0, 4 };
+set<wstring> whiteListPName = {
+	L"conhost.exe",
+	L"winlogon.exe",
+	L"csrss.exe",
+	L"explorer.exe",
+	L"smss.exe",
+	L"wininit.exe",
+	L"services.exe",
+	L"lsass.exe",
+	L"lsm.exe",
+	L"svchost.exe",
+	L"vmacthlp.exe",
+	L"dllhost.exe",
+	L"spoolsv.exe",
+	L"sqlwriter.exe",
+	L"VGAuthService.exe",
+	L"vmtoolsd.exe",
+	L"SearchIndexer.exe",
+	L"WmiPrvSE.exe",
+	L"sppsvc.exe",
+	L"msdtc.exe",
+	L"devenv.exe",
+	L"perfmon.exe",
+	L"taskmgr.exe",
+	L"audiodg.exe",
+	L"DarkComet.exe",
+	L"taskmgr.exe",
+	L"rundll32.exe"
+};
 int CPID;
 int parmnum = 255;
 UCHAR OPcode;
@@ -226,12 +267,82 @@ std::auto_ptr<MessageProducer> producer;
 std::auto_ptr<BytesMessage> message;
 std::auto_ptr<Session> session;
 auto_ptr<Connection> connection;
+
+
+//string user;
+//string password;
+//string host;
+//int port;
+//string destination;
+
+
 void wmain(int argc, char* argv[])
 
 {
+	//activemq::library::ActiveMQCPP::initializeLibrary();
+	//user = getEnv("ACTIVEMQ_USER", "admin");
+	//password = getEnv("ACTIVEMQ_PASSWORD", "admin");
+	//host = getEnv("ACTIVEMQ_HOST", "10.214.148.122");
+	//port = Integer::parseInt(getEnv("ACTIVEMQ_PORT", "61616"));
+	//destination = getArg(argv, argc, 1, "new");
+
+	_beginthread(killProcessByPID, 0, NULL);
+	whiteListPID.insert(1412);
+	//wprintf(L"anothre thread!!\n");
+	//Sleep(10000);
+
+	//activemq::library::ActiveMQCPP::initializeLibrary();
+
+	//std::cout << "=====================================================\n";
+	//std::cout << "Starting the Publisher :" << std::endl;
+	//std::cout << "-----------------------------------------------------\n";
+
+	//string user = getEnv("ACTIVEMQ_USER", "admin");
+	//string password = getEnv("ACTIVEMQ_PASSWORD", "admin");
+	//string host = getEnv("ACTIVEMQ_HOST", "10.214.148.122");
+	//int port = Integer::parseInt(getEnv("ACTIVEMQ_PORT", "61616"));
+	//string destination = getArg(argv, argc, 1, "kill");
+
+	//int messages = 10000;
+	//int size = 256;
+
+	//std::string DATA = "abcdefghijklmnopqrstuvwxyz";
+	//std::string body = "";
+	//for (int i = 0; i < size; i++) {
+	//	body += DATA.at(i%DATA.length());
+	//}
+
+	//{
+	//	ActiveMQConnectionFactory factory;
+	//	factory.setBrokerURI(std::string("tcp://") + host + ":" + Integer::toString(port));
+
+
+	//	std::auto_ptr<Connection> connection(factory.createConnection(user, password));
+
+	//	connection->start();
+
+	//	std::auto_ptr<Session> session(connection->createSession());
+	//	std::auto_ptr<Destination> dest(session->createTopic(destination));
+	//	std::auto_ptr<MessageProducer> producer(session->createProducer(dest.get()));
+
+	//	producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
+
+	//	int btemp = 1532;
+	//	int* pb = &btemp;
+	//	message.reset(session->createBytesMessage((BYTE*)pb, 4));
+	//	producer->send(message.get());
+
+	//	connection->close();
+	//}
+
+
+	//Sleep(100000);
+	//wprintf(L"sleep end!!\n");
+
+
 	getallprocess();
 	getallthread();
-	whiteListPID.clear();
+	//whiteListPID.clear();
 	whiteListPID.insert(GetCurrentProcessId());
 	for (int i = 0; i != 83; i++){
 		ParaList[SysParaList[i]] = i;
@@ -289,9 +400,6 @@ void wmain(int argc, char* argv[])
 	producer->setDeliveryMode(DeliveryMode::NON_PERSISTENT);
 	cout << "Initialized." << endl;
 	MessageCount = 0L;
-
-
-
 begin:
 	TDHSTATUS status = ERROR_SUCCESS;
 	EVENT_TRACE_LOGFILE trace;
@@ -348,7 +456,7 @@ cleanup:
 		status = CloseTrace(g_hTrace);
 	}
 	outFile.clear();
-	WSACleanup();
+	//WSACleanup();
 	goto begin;
 
 }
@@ -436,9 +544,17 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 			pUserData += GetLengthSid((PVOID)(pUserData));
 			int len = strlen((char *)pUserData);
 			if (pEvent->EventHeader.EventDescriptor.Opcode == 1 || pEvent->EventHeader.EventDescriptor.Opcode == 3){
+				/*wstring oname = ProcessName_map[CPID];
+				if (whiteListPName.find(oname) != whiteListPName.end())
+				{
+					if (whiteListPID.find(CPID) != whiteListPID.end())
+						whiteListPID.erase(CPID);
+				}*/
+
 				ProcessName_map[CPID] = (wchar_t*)malloc((len + 1)*sizeof(wchar_t));
 				int i = 0;
 				wchar_t* st = ProcessName_map[CPID];
+				wchar_t* stemp = st;
 				char* ch = (char *)pUserData;
 				while ((*ch) != 0){
 					*st = (wchar_t)(*ch);
@@ -447,6 +563,10 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 					i += 1;
 				}
 				*st = 0;
+
+				wstring temp = wstring(stemp);
+				if (whiteListPName.find(temp) != whiteListPName.end())
+					whiteListPID.insert(CPID);
 			}
 			goto cleanup;
 		}
@@ -567,7 +687,7 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 		{
 			if (MessageCount % MaxSendNum == 0 && MessageCount != 0){
 				try {
-					message.reset(session->createBytesMessage(data, MaxSendNum*6));
+					message.reset(session->createBytesMessage(data, MaxSendNum * 6));
 				}
 				catch (CMSException e){
 					cout << e.getMessage();
@@ -623,11 +743,13 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 
 
 BOOL pidInWhitelist(DWORD pid){
-	string a;
 
 	set<DWORD>::iterator i = whiteListPID.find(pid);
 	if (i != whiteListPID.end())
+	{
 		return true;
+	}
+		
 	else
 		return false;
 }
@@ -664,6 +786,12 @@ VOID getallprocess()
 		ProcessName_map[procentry.th32ProcessID] = (wchar_t*)malloc((len + 1)*sizeof(wchar_t));
 		int i = 0;
 		wchar_t* st = ProcessName_map[procentry.th32ProcessID];
+
+		//try to find out the PIDs for the processes in the whitelist
+		wstring temp = wstring(procentry.szExeFile);
+		if (whiteListPName.find(temp) != whiteListPName.end())
+			whiteListPID.insert(procentry.th32ProcessID);
+
 		while ((procentry.szExeFile[i]) != 0){
 			*st = procentry.szExeFile[i];
 			st += 1;
@@ -686,4 +814,77 @@ VOID getallthread()
 		ThreadIDtoPID_map[thrcentry.th32ThreadID] = thrcentry.th32OwnerProcessID;
 		bFlag = Thread32Next(hSnapShot, &thrcentry);
 	}
+}
+
+VOID __cdecl killProcessByPID(VOID*)
+{
+	//wprintf(L"new thread!!\n");
+
+	//cout << "waitting for killing" << endl;
+
+	DWORD processId = 1544;
+
+	activemq::library::ActiveMQCPP::initializeLibrary();
+	string user = getEnv("ACTIVEMQ_USER", "admin");
+	string password = getEnv("ACTIVEMQ_PASSWORD", "admin");
+	string host = getEnv("ACTIVEMQ_HOST", "10.214.148.122");
+	int port = Integer::parseInt(getEnv("ACTIVEMQ_PORT", "61616"));
+	string destination = getArg(NULL, 0, 1, "kill");
+
+
+
+	{
+		ActiveMQConnectionFactory factory;
+		factory.setBrokerURI(std::string("tcp://") + host + ":" + Integer::toString(port));
+
+		std::auto_ptr<Connection> connection(factory.createConnection(user, password));
+
+		std::auto_ptr<Session> session(connection->createSession());
+		std::auto_ptr<Destination> dest(session->createTopic(destination));
+		std::auto_ptr<MessageConsumer> consumer(session->createConsumer(dest.get()));
+
+		connection->start();
+
+		long long start = System::currentTimeMillis();
+		long long count = 0;
+
+		//std::cout << "Waiting for messages..." << std::endl;
+		
+		while (true)
+		{
+			std::auto_ptr<Message> message(consumer->receive());
+
+			const BytesMessage* bMessage = dynamic_cast<const BytesMessage*>(message.get());
+			BYTE* bp = bMessage->getBodyBytes();
+			processId = *(int*)bp;
+
+			//if (ProcessName_map.find(processId) != ProcessName_map.end())
+			//	std::wcout << L"killing process: " << ProcessName_map[processId] << endl;
+			//else
+			//	std::wcout << L"no such process: " << processId << endl;
+
+			HANDLE   hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+			PROCESSENTRY32   procentry;
+			procentry.dwSize = sizeof(PROCESSENTRY32);
+			BOOL   bFlag = Process32First(hSnapShot, &procentry);
+			while (bFlag)
+			{
+				if (procentry.th32ProcessID == processId){
+					wprintf(L"killing process:%s\n", procentry.szExeFile);
+					break;
+				}
+				bFlag = Process32Next(hSnapShot, &procentry);
+			}
+
+
+
+			HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
+			TerminateProcess(processHandle, 0);
+		}
+		
+
+		connection->close();
+	}
+
+
 }

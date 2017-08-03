@@ -78,7 +78,7 @@ void GetkrnlBase()
 		if (endWith(SystemInfo->aSM[i].ImageName, "win32k.sys"))
 		{
 			win32kBase = SystemInfo->aSM[i].Base;
-			cout << SystemInfo->aSM[i].ImageName << endl;;
+			//cout << SystemInfo->aSM[i].ImageName << endl;;
 		}
 	}
 	//	outfile<<L"krnlBase : "<<hex<<krnlBase<<endl
