@@ -1,5 +1,11 @@
-﻿#define INITGUID
+﻿//Turns the DEFINE_GUID for EventTraceGuid into a const.
+#define INITGUID
 
+
+//#include <Winsock2.h>
+//#include <WS2tcpip.h>
+//#pragma comment(lib, "ws2_32.lib")
+#pragma warning(disable:4996)
 #include <windows.h>
 #include <stdio.h>
 #include <wbemidl.h>
@@ -17,14 +23,13 @@
 #include <tlhelp32.h>
 #include <stdlib.h>
 #include <sddl.h>
-#include <thread>
+
 #include <memory>
+
 #include <unordered_map>
 
-#include <mutex>
-#include <condition_variable>
-
 #include <activemq/util/Config.h>
+
 #include <decaf/lang/System.h>
 #include <decaf/lang/Runnable.h>
 #include <decaf/lang/Integer.h>
@@ -36,57 +41,23 @@
 #include <cms/MessageProducer.h>
 #include <cms/BytesMessage.h>
 #include <cms/CMSException.h>
-
-#include "getAddress.h"
-#include "syscallParaList.h"
-#include "consumer.h"
-#include "messageQueue.h"
-
-
-#pragma comment(lib, "tdh.lib")
-#pragma warning(disable:4996)
-
-
+#define MaxSendNum 10000
 using namespace cms;
 using namespace activemq;
 using namespace activemq::core;
 using namespace decaf;
 using namespace decaf::lang;
 
+
 using namespace std;
 
-
-set<DWORD> whiteListPID = { 0, 4 };
-set<wstring> whiteListPName = {
-	L"conhost.exe",
-	L"winlogon.exe",
-	L"csrss.exe",
-	L"explorer.exe",
-	L"smss.exe",
-	L"wininit.exe",
-	L"services.exe",
-	L"lsass.exe",
-	L"lsm.exe",
-	L"svchost.exe",
-	L"vmacthlp.exe",
-	L"dllhost.exe",
-	L"spoolsv.exe",
-	L"sqlwriter.exe",
-	L"VGAuthService.exe",
-	L"vmtoolsd.exe",
-	L"SearchIndexer.exe",
-	L"WmiPrvSE.exe",
-	L"sppsvc.exe",
-	L"msdtc.exe",
-	L"devenv.exe",
-	L"perfmon.exe",
-	L"taskmgr.exe",
-	L"audiodg.exe",
-	L"DarkComet.exe",
-	L"taskmgr.exe"
-};
+#include "getAddress.h"
 
 
+#pragma comment(lib, "tdh.lib")
+
+//#define LOGFILE_PATH L"C:\\Users\\admin\\Desktop\\online\\record.etl"
+#define LOGFILE_PATH L"G:\\source\\DIA_findSymbolByVA\\record.etl"
 
 struct hash_func
 {
@@ -104,6 +75,7 @@ struct hash_func
 		return hash & (0x7FFFFFFF);
 	}
 };
+
 struct cmp
 {
 	bool operator()(const wchar_t *str1, const wchar_t * str2)const
@@ -112,21 +84,156 @@ struct cmp
 	}
 };
 unordered_map<const wchar_t*, int, hash_func, cmp> ParaList;
+wchar_t* SysParaList[] = { L"NtGdiCreateCompatibleDC",
+L"NtGdiGetDIBitsInternal",
+L"NtUserGetDC",
+L"NtGdiGetDeviceCaps",
+L"NtGdiOpenDCW",
+L"NtGdiCreateCompatibleBitmap",
+L"NtGdiDeleteObjectApp",
+L"NtGdiBitBlt",
+L"NtProtectVirtualMemory",
+L"NtSetInformationThread",
+L"NtCreateFile",
+L"NtGdiCreateDIBSection",
+L"NtGdiExtGetObjectW",
+L"NtGdiFlush",
+L"NtGdiStretchBlt",
+L"NtQuerySystemInformation",
+L"NtFlushInstructionCache",
+L"NtQueryAttributesFile",
+L"NtOpenFile",
+L"NtCreateSection",
+L"NtQuerySection",
+L"NtOpenKeyEx",
+L"NtQueryValueKey",
+L"NtOpenSection",
+L"NtQueryKey",
+L"NtUserGetForegroundWindow",
+L"NtUserQueryWindow",
+L"NtUserGetKeyState",
+L"NtUserGetKeyboardState",
+L"NtUserToUnicodeEx",
+L"NtUserMapVirtualKeyEx",
+L"NtSetInformationFile",
+L"NtAlpcConnectPort",
+L"NtEnumerateValueKey",
+L"NtQueryObject",
+L"NtCreateKey",
+L"NtOpenEvent",
+L"NtTraceControl",
+L"ALPC_REC",
+L"ALPC_SEN",
+L"FileIoCreateFile",
+L"ImageLoad",
+L"RegistryCreateKey",
+L"RegistryOpenKey",
+L"RegistryQueryKey",
+L"RegistryQueryValue",
+L"SystemCall",
+L"NtUserRegisterWindowMessage",
+L"csrss.exe",
+L"services.exe",
+L"svchost.exe",
+L"dwm.exe",
+L"\\Device\\HarddiskVolume1\\Windows\\SysWOW64\\MMDevAPI.DLL",
+L"\\Device\\HarddiskVolume1\\Windows\\SysWOW64\\wdmaud.drv",
+L"\\Device\\HarddiskVolume1\\Windows\\SysWOW64\\ksuser.dll",
+L"\\Device\\HarddiskVolume1\\Windows\\SysWOW64\\AVRT.dll",
+L"\\Windows\\SysWOW64\\AudioSes.dll",
+L"\\Windows\\SysWOW64\\MMDevAPI.dll",
+L"\\Windows\\SysWOW64\\wdmaud.drv",
+L"\\Windows\\SysWOW64\\ksuser.dll",
+L"\\Windows\\SysWOW64\\avrt.dll",
+L"Software\\Microsoft\\Multimedia\\Audio",
+L"MSACM",
+L"Priority",
+L"\\Registry\\Machine\\Hardware\\DeviceMap\\VIDEO",
+L"\\Registry\\Machine\\System\\CurrentControlSet\\CONTROL\\VIDEO\\",
+L"System\\CurrentControlSet\\Control\\SQMServiceList",
+L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Capture\\",
+L"System\\CurrentControlSet\\Control\\MediaProperties\\PrivateProperties\\Joystick\\Winmm",
+L"\\REGISTRY\\MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows",
+L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\",
+L"\\REGISTRY\\USER\\S-1-5-21-3472189781-4152027690-2755707555-1000",
+L"Software\\Microsoft\\Windows\\CurrentVersion\\Multimedia\\MIDIMap",
+L"\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\AudioCompressionManager\\DriverCache",
+L"msacm.imaadpcm",
+L"msacm.msg711",
+L"msacm.msgsm610",
+L"msacm.msadpcm",
+L"msacm.l3acm",
+L"System\\CurrentControlSet\\Control\\MediaResources\\acm",
+L"System\\CurrentControlSet\\Control\\SQMServiceList",
+L"0",
+L"Software\\Microsoft\\Multimedia\\Audio",
+L"SOFTWARE\\Microsoft\\CTF\\KnownClasses"
+};
+// Used to calculate CPU usage
 
+ULONG g_TimerResolution = 0;
+
+//Used to determine if the session is a private session or kernel session.
+//You need to know this when accessing some members of the EVENT_TRACE.Header
+//member (for example, KernelTime or UserTime).
+
+BOOL g_bUserMode = FALSE;
+
+// Handle to the trace file that you opened.
+
+TRACEHANDLE g_hTrace = 0;
+
+// Prototypes
+
+void WINAPI ProcessEvent(PEVENT_RECORD pEvent);
+DWORD GetEventInformation(PEVENT_RECORD pEvent, PTRACE_EVENT_INFO & pInfo);
+PBYTE PrintProperties(PEVENT_RECORD pEvent, PTRACE_EVENT_INFO pInfo, DWORD PointerSize, USHORT i, PBYTE pUserData, PBYTE pEndOfUserData);
+DWORD GetPropertyLength(PEVENT_RECORD pEvent, PTRACE_EVENT_INFO pInfo, USHORT i, PUSHORT PropertyLength);
+void RemoveTrailingSpace(PEVENT_MAP_INFO pMapInfo);
+string getEnv(const string& key, const string& defaultValue);
+string getArg(char* argv[], int argc, int index, const string& defaultValue);
+BOOL pidInWhitelist(DWORD pid);
+BOOL finishOP;
+VOID getallthread(VOID);
+VOID getallprocess(VOID);
+SOCKET sockClient;
+using namespace std;
+
+//global values
+wofstream outFile;
+DWORD  MessageCount;
+DWORD curPID[4] = { 0L };
+BYTE data[MaxSendNum*6 + 1];
+getAddress g;
+string path = "";
+DWORD EventType;
+wchar_t* parm;
+set<DWORD> whiteListPID;
+int CPID;
+int parmnum = 255;
+UCHAR OPcode;
+
+// hash map for file name
+DWORD fileObject;
+unordered_map<DWORD, DWORD> keyhandleMap;
+unordered_map<DWORD, short> ParmToNum;
+unordered_map<DWORD, wchar_t*> ProcessName_map;
+
+unordered_map<DWORD, DWORD> ThreadIDtoPID_map;
+unordered_map<DWORD, DWORD> keyname_map;
+unordered_map<DWORD, DWORD> messageID_Map;
+unordered_map<DWORD, DWORD> couteachprocesseventnumber;
 //global values for activeMQ
 std::auto_ptr<MessageProducer> producer;
 std::auto_ptr<BytesMessage> message;
 std::auto_ptr<Session> session;
 auto_ptr<Connection> connection;
-
-
 void wmain(int argc, char* argv[])
-{
-	//_beginthread(killProcessByPID, 0, NULL);
 
+{
 	getallprocess();
 	getallthread();
-
+	whiteListPID.clear();
 	whiteListPID.insert(GetCurrentProcessId());
 	for (int i = 0; i != 83; i++){
 		ParaList[SysParaList[i]] = i;
@@ -134,7 +241,29 @@ void wmain(int argc, char* argv[])
 	for (unordered_map<DWORD, wchar_t*>::iterator ix = g.addressToName.begin(); ix != g.addressToName.end(); ix++){
 		ParmToNum[ix->first] = ParaList[ix->second];
 	}
+	//WORD wVersionRequested;
+	//WSADATA wsaData;
+	//int err;
 
+	//wVersionRequested = MAKEWORD(1, 1);
+
+	//err = WSAStartup(wVersionRequested, &wsaData);
+	//if (err != 0) {
+	//	return;
+	//}
+
+	//if (LOBYTE(wsaData.wVersion) != 1 ||
+	//	HIBYTE(wsaData.wVersion) != 1) {
+	//	WSACleanup();
+	//	return;
+	//}
+	//sockClient = socket(AF_INET, SOCK_STREAM, 0);
+
+	//SOCKADDR_IN addrSrv;
+	//inet_pton(AF_INET, "192.168.152.129", &(addrSrv.sin_addr.S_un.S_addr));
+	//addrSrv.sin_family = AF_INET;
+	//addrSrv.sin_port = htons(6000);
+	//int ret = connect(sockClient, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
 	activemq::library::ActiveMQCPP::initializeLibrary();
 
 	cout << "=====================================================\n";
@@ -163,8 +292,7 @@ void wmain(int argc, char* argv[])
 	cout << "Initialized." << endl;
 	MessageCount = 0L;
 
-	_beginthread(consumEvent, 0, NULL);
-	_beginthread(consumEvent, 0, NULL);
+
 
 begin:
 	TDHSTATUS status = ERROR_SUCCESS;
@@ -177,7 +305,7 @@ begin:
 	ZeroMemory(&trace, sizeof(EVENT_TRACE_LOGFILE));
 	trace.LoggerName = KERNEL_LOGGER_NAME;
 	//	trace.LoggerName = L"Windows Kernel Trace";
-	trace.EventRecordCallback = (PEVENT_RECORD_CALLBACK)(produceEvent);
+	trace.EventRecordCallback = (PEVENT_RECORD_CALLBACK)(ProcessEvent);
 	trace.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME | PROCESS_TRACE_MODE_EVENT_RECORD;
 	g_hTrace = OpenTrace(&trace);
 	if (INVALID_PROCESSTRACE_HANDLE == g_hTrace)
@@ -200,7 +328,7 @@ begin:
 			2 * (pHeader->PointerSize - sizeof(PVOID)));
 	}
 
-	// wprintf(L"Number of buffers lost: %lu\n\n", pHeader->BuffersLost);
+	//    wprintf(L"Number of buffers lost: %lu\n\n", pHeader->BuffersLost);
 
 
 	status = ProcessTrace(&g_hTrace, 1, 0, 0);
@@ -211,6 +339,9 @@ begin:
 	}
 
 
+
+
+
 cleanup:
 
 	//	wprintf(L"The process is ended with %lu\n", status);
@@ -219,62 +350,14 @@ cleanup:
 		status = CloseTrace(g_hTrace);
 	}
 	outFile.clear();
-	//WSACleanup();
+	WSACleanup();
 	goto begin;
 
-}
-
-void WINAPI produceEvent(PEVENT_RECORD pEvent)
-{
-	unique_lock<mutex> lock(bufferMutex);
-
-	notFullCv.wait(lock, [=] {return pEventBufferSize < BUFFERSIZE; });
-
-	{
-		//pEventBuffer[producterPos] = pEvent;
-		eventStructBuffer[producterPos].userData = pEvent->UserData;
-		eventStructBuffer[producterPos].userDataSize = pEvent->UserDataLength;
-		
-		cout << (pEvent->EventHeader).Size << "+" << pEvent->UserDataLength << "=" << (pEvent->EventHeader).Size + pEvent->UserDataLength << "?=" << pEvent->UserData;
-
-		producterPos = (producterPos + 1) % BUFFERSIZE;
-		++pEventBufferSize;
-		cout << "producter postion: " << producterPos << "\tbuffer size: " << pEventBufferSize << endl;
-	}
-
-	lock.unlock();
-
-	notEmptyCv.notify_one();
-	//notEmptyCv.notify_all();
-}
-
-VOID __cdecl consumEvent(VOID*)
-{
-	while (1)
-	{
-		unique_lock<mutex> lock(bufferMutex);
-
-		notEmptyCv.wait(lock, [=] {return pEventBufferSize > 0; });
-
-
-		{
-			//ProcessEvent(pEventBuffer[consumerPos]);
-			eventStructBuffer[consumerPos];
-			consumerPos = (consumerPos + 1) % BUFFERSIZE;
-			--pEventBufferSize;
-			cout << "consumer postion: " << consumerPos << "\tbuffer size: " << pEventBufferSize << endl;
-		}
-
-		lock.unlock();
-		notFullCv.notify_one();
-	}
 }
 
 
 VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 {
-	cout << pEvent << ": " << int(pEvent->EventHeader.EventDescriptor.Opcode) << endl;
-
 	DWORD status = ERROR_SUCCESS;
 	DWORD pUserData;
 	DWORD PointerSize = 0;
@@ -355,17 +438,9 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 			pUserData += GetLengthSid((PVOID)(pUserData));
 			int len = strlen((char *)pUserData);
 			if (pEvent->EventHeader.EventDescriptor.Opcode == 1 || pEvent->EventHeader.EventDescriptor.Opcode == 3){
-				/*wstring oname = ProcessName_map[CPID];
-				if (whiteListPName.find(oname) != whiteListPName.end())
-				{
-					if (whiteListPID.find(CPID) != whiteListPID.end())
-						whiteListPID.erase(CPID);
-				}*/
-
 				ProcessName_map[CPID] = (wchar_t*)malloc((len + 1)*sizeof(wchar_t));
 				int i = 0;
 				wchar_t* st = ProcessName_map[CPID];
-				wchar_t* stemp = st;
 				char* ch = (char *)pUserData;
 				while ((*ch) != 0){
 					*st = (wchar_t)(*ch);
@@ -374,10 +449,6 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 					i += 1;
 				}
 				*st = 0;
-
-				wstring temp = wstring(stemp);
-				if (whiteListPName.find(temp) != whiteListPName.end())
-					whiteListPID.insert(CPID);
 			}
 			goto cleanup;
 		}
@@ -494,85 +565,94 @@ VOID WINAPI ProcessEvent(PEVENT_RECORD pEvent)
 			goto cleanup;
 		}
 	cleanup:
-		ioMutex.lock();
-
+		if (!pidInWhitelist(CPID) && finishOP)
 		{
-			if (!pidInWhitelist(CPID) && finishOP)
-			{
-				if (MessageCount % MaxSendNum == 0 && MessageCount != 0){
-					try {
-						message.reset(session->createBytesMessage(data, MaxSendNum * 6));
-					}
-					catch (CMSException e){
-						cout << e.getMessage();
-						auto_ptr<Session> ss(connection->createSession());
-						session = ss;
-					}
+			if (MessageCount % MaxSendNum == 0 && MessageCount != 0){
+				try {
+					message.reset(session->createBytesMessage(data, MaxSendNum*6));
+				}
+				catch (CMSException e){
+					cout << e.getMessage();
+					auto_ptr<Session> ss(connection->createSession());
+					session = ss;
+				}
 
-					producer->send(message.get());
-				}
-				if (couteachprocesseventnumber.find(CPID) != couteachprocesseventnumber.end()){
-					couteachprocesseventnumber[CPID]++;
-				}
-				else{
-					couteachprocesseventnumber[CPID] = 1;
-				}
-				data[(MessageCount%MaxSendNum) * 6] = couteachprocesseventnumber[CPID] % 255 + 1;
-				data[(MessageCount%MaxSendNum) * 6 + 1] = (couteachprocesseventnumber[CPID] / 255) % 255 + 1;
-				data[(MessageCount%MaxSendNum) * 6 + 2] = CPID % 255 + 1;
-				data[(MessageCount%MaxSendNum) * 6 + 3] = (CPID / 255) % 255 + 1;
-				data[(MessageCount%MaxSendNum) * 6 + 4] = parmnum + 1;
-				data[(MessageCount%MaxSendNum) * 6 + 5] = EventType + 1;
-				MessageCount++;
-
-				cout << "outputing..." << endl;
-				cout << data << endl;
-				//string messageBody = ss.str();
-				//reset
-				//message.reset(session->createTextMessage(boost::asio::buffer(data)));
-				//			cout << data << endl;
-				//send to activeMQ
-				//output to local file
-				//outFile << messageBody.c_str() << endl;
-				//outFile << data << endl;
-				//outFile << hex << (((strnum << 1) + parmnum / 256) << 24) + (parmnum % 256 << 16) + (CPID / 256 << 8) + CPID % 256 << ' ';
-				//cout << messageBody.c_str() << endl;
-				//int ret;
-				//if ((ret = send(sockClient, (char*)&data, 4, 0)) < 0)
-				//	{
-				//		printf("errno: %d\n", WSAGetLastError());
-				//	}
-				if (MessageCount % 10000 == 0)
-				{
-					//wcout << L"published " << MessageCount << L" messages!" << endl;
-				}
+				producer->send(message.get());
 			}
-			parmnum = 255;
-			EventType = 255;
-			//CloseTrace(g_hTrace);
-			if (ERROR_SUCCESS != status || NULL == pUserData)
+			if (couteachprocesseventnumber.find(CPID) != couteachprocesseventnumber.end()){
+				couteachprocesseventnumber[CPID]++;
+			}
+			else{
+				couteachprocesseventnumber[CPID] = 1;
+			}
+			data[(MessageCount%MaxSendNum) * 6] = couteachprocesseventnumber[CPID] % 255 + 1;
+			data[(MessageCount%MaxSendNum) * 6 + 1] = (couteachprocesseventnumber[CPID] / 255) % 255 + 1;
+			data[(MessageCount%MaxSendNum) * 6 + 2] = CPID % 255 + 1;
+			data[(MessageCount%MaxSendNum) * 6 + 3] = (CPID / 255) % 255 + 1;
+			data[(MessageCount%MaxSendNum) * 6 + 4] = parmnum + 1;
+			data[(MessageCount%MaxSendNum) * 6 + 5] = EventType + 1;
+			MessageCount++;
+			//string messageBody = ss.str();
+			//reset
+			//message.reset(session->createTextMessage(boost::asio::buffer(data)));
+			//			cout << data << endl;
+			//send to activeMQ
+			//output to local file
+			//outFile << messageBody.c_str() << endl;
+			//outFile << data << endl;
+			//outFile << hex << (((strnum << 1) + parmnum / 256) << 24) + (parmnum % 256 << 16) + (CPID / 256 << 8) + CPID % 256 << ' ';
+			//cout << messageBody.c_str() << endl;
+			//int ret;
+			//if ((ret = send(sockClient, (char*)&data, 4, 0)) < 0)
+			//	{
+			//		printf("errno: %d\n", WSAGetLastError());
+			//	}
+			if (MessageCount % 10000 == 0)
 			{
-				CloseTrace(g_hTrace);
+				wcout << L"published " << MessageCount << L" messages!" << endl;
 			}
 		}
-
-		ioMutex.unlock();
+		parmnum = 255;
+		EventType = 255;
+		//CloseTrace(g_hTrace);
+		if (ERROR_SUCCESS != status || NULL == pUserData)
+		{
+			CloseTrace(g_hTrace);
+		}
 	}
 }
+
 
 
 BOOL pidInWhitelist(DWORD pid){
+	string a;
 
 	set<DWORD>::iterator i = whiteListPID.find(pid);
 	if (i != whiteListPID.end())
-	{
 		return true;
-	}
-		
 	else
 		return false;
 }
+string getEnv(const string& key, const string& defaultValue) {
 
+	try{
+		return System::getenv(key);
+	}
+	catch (...) {
+	}
+
+	return defaultValue;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+string getArg(char* argv[], int argc, int index, const string& defaultValue) {
+
+	if (index < argc) {
+		return argv[index];
+	}
+
+	return defaultValue;
+}
 
 VOID getallprocess()
 {
@@ -586,12 +666,6 @@ VOID getallprocess()
 		ProcessName_map[procentry.th32ProcessID] = (wchar_t*)malloc((len + 1)*sizeof(wchar_t));
 		int i = 0;
 		wchar_t* st = ProcessName_map[procentry.th32ProcessID];
-
-		//try to find out the PIDs for the processes in the whitelist
-		wstring temp = wstring(procentry.szExeFile);
-		if (whiteListPName.find(temp) != whiteListPName.end())
-			whiteListPID.insert(procentry.th32ProcessID);
-
 		while ((procentry.szExeFile[i]) != 0){
 			*st = procentry.szExeFile[i];
 			st += 1;
@@ -614,77 +688,4 @@ VOID getallthread()
 		ThreadIDtoPID_map[thrcentry.th32ThreadID] = thrcentry.th32OwnerProcessID;
 		bFlag = Thread32Next(hSnapShot, &thrcentry);
 	}
-}
-
-VOID __cdecl killProcessByPID(VOID*)
-{
-	//wprintf(L"new thread!!\n");
-
-	//cout << "waitting for killing" << endl;
-
-	DWORD processId = 1544;
-
-	activemq::library::ActiveMQCPP::initializeLibrary();
-	string user = getEnv("ACTIVEMQ_USER", "admin");
-	string password = getEnv("ACTIVEMQ_PASSWORD", "admin");
-	string host = getEnv("ACTIVEMQ_HOST", "10.214.148.122");
-	int port = Integer::parseInt(getEnv("ACTIVEMQ_PORT", "61616"));
-	string destination = getArg(NULL, 0, 1, "kill");
-
-
-
-	{
-		ActiveMQConnectionFactory factory;
-		factory.setBrokerURI(std::string("tcp://") + host + ":" + Integer::toString(port));
-
-		std::auto_ptr<Connection> connection(factory.createConnection(user, password));
-
-		std::auto_ptr<Session> session(connection->createSession());
-		std::auto_ptr<Destination> dest(session->createTopic(destination));
-		std::auto_ptr<MessageConsumer> consumer(session->createConsumer(dest.get()));
-
-		connection->start();
-
-		long long start = System::currentTimeMillis();
-		long long count = 0;
-
-		//std::cout << "Waiting for messages..." << std::endl;
-		
-		while (true)
-		{
-			std::auto_ptr<Message> message(consumer->receive());
-
-			const BytesMessage* bMessage = dynamic_cast<const BytesMessage*>(message.get());
-			BYTE* bp = bMessage->getBodyBytes();
-			processId = *(int*)bp;
-
-			//if (ProcessName_map.find(processId) != ProcessName_map.end())
-			//	std::wcout << L"killing process: " << ProcessName_map[processId] << endl;
-			//else
-			//	std::wcout << L"no such process: " << processId << endl;
-
-			HANDLE   hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-			PROCESSENTRY32   procentry;
-			procentry.dwSize = sizeof(PROCESSENTRY32);
-			BOOL   bFlag = Process32First(hSnapShot, &procentry);
-			while (bFlag)
-			{
-				if (procentry.th32ProcessID == processId){
-					wprintf(L"killing process:%s\n", procentry.szExeFile);
-					break;
-				}
-				bFlag = Process32Next(hSnapShot, &procentry);
-			}
-
-
-
-			HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
-			TerminateProcess(processHandle, 0);
-		}
-		
-
-		connection->close();
-	}
-
-
 }
