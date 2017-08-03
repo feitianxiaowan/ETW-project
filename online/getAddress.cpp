@@ -12,12 +12,6 @@ getAddress::~getAddress(void)
 }
 
 
-
-
-
-
-
-
 wofstream outfile;
 IDiaDataSource *pSource;
 IDiaSession *psession;
